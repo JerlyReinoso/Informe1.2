@@ -1,0 +1,10 @@
+
+final String apiUrl = 'http://192.168.100.185/api/routes/users.php';
+
+base de datos
+CREATE TABLE users (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  nombre VARCHAR(100),
+  email VARCHAR(100) UNIQUE,
+  password VARCHAR(255)
+);

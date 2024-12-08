@@ -1,0 +1,68 @@
+<?php
+include_once '../models/User.php';
+include_once '../config/db.php';
+use \Firebase\JWT\JWT;
+
+class UserController {
+
+    // Registro de usuario
+    public function register() {
+        $data = json_decode(file_get_contents("php://input"));
+        $nombre = $data->nombre;
+        $email = $data->email;
+        $password = $data->password;
+
+        if (User::create($nombre, $email, $password)) {
+            echo json_encode(['message' => 'Usuario creado exitosamente']);
+        } else {
+            echo json_encode(['message' => 'Error al crear el usuario']);
+        }
+    }
+
+    // Inicio de sesión de usuario
+    public function login() {
+        $data = json_decode(file_get_contents("php://input"));
+        $email = $data->email;
+        $password = $data->password;
+
+        $user = User::getUserByEmail($email);
+
+        if ($user && password_verify($password, $user->password)) {
+            $key = "your_secret_key";
+            $issuedAt = time();
+            $expirationTime = $issuedAt + 3600;  // 1 hour from issued time
+            $payload = array(
+                "iat" => $issuedAt,
+                "exp" => $expirationTime,
+                "user_id" => $user->id,
+                "nombre" => $user->nombre
+            );
+            $jwt = JWT::encode($payload, $key);
+            echo json_encode(['token' => $jwt]);
+        } else {
+            echo json_encode(['message' => 'Credenciales incorrectas']);
+        }
+    }
+
+    // Obtener todos los usuarios (CRUD - READ)
+    public function getAllUsers() {
+        global $conn;  // Usamos la conexión global
+        $sql = "SELECT id, nombre, email FROM users";
+        $stmt = $conn->prepare($sql);
+        $stmt->execute();
+        $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        echo json_encode($users);
+    }
+
+    // Función para obtener un solo usuario (CRUD - READ)
+    public function getUser($id) {
+        global $conn;  // Usamos la conexión global
+        $sql = "SELECT id, nombre, email FROM users WHERE id = :id";
+        $stmt = $conn->prepare($sql);
+        $stmt->bindParam(':id', $id);
+        $stmt->execute();
+        $user = $stmt->fetch(PDO::FETCH_ASSOC);
+        echo json_encode($user);
+    }
+}
+?>
